@@ -27,11 +27,11 @@ for opt, arg in opts:
     if opt in "-u":
         URL = arg
     elif opt in "-i":
-        ITERATIONS = arg
+        ITERATIONS = int(arg)
     elif opt in "-p":
-        POINTS = arg
+        POINTS = int(arg)
     elif opt in "-m":
-        MAX_POINTS = arg
+        MAX_POINTS = int(arg)
     elif opt in "-a":
         IS_ANONYMOUS = False
     elif opt in "-t":

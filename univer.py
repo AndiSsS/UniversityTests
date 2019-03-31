@@ -1,7 +1,7 @@
 from defs import *
 
 inner_i = 0
-for i in range(1, ITERATIONS+1):
+for i in range(1, ITERATIONS + 1):
 	print('ITERATION\t' + str(i))
 
 	authorize()
