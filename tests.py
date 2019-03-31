@@ -1,11 +1,18 @@
-from defs import *
+from selenium import webdriver
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.common.by import By
+import sys, getopt
+import selenium.common.exceptions
+import time
 
-authorize()
+driver = webdriver.Chrome('chromedriver.exe')
+driver.get('http://localhost/tests/')
 
-question_name = get_question_name()
-print("QUESTION NAME:        " + question_name) ################
-		
-# submit()
-# driver.switch_to_alert().accept()
+driver.implicitly_wait(0)
 
+input_elem = driver.find_element_by_xpath('//input')
 
+input_elem.send_keys('TEST')
+
+print(input_elem.get_property('value'))
