@@ -1,5 +1,7 @@
 from selenium import webdriver
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.common.by import By
 import sys, getopt
 import selenium.common.exceptions
 import time
@@ -19,13 +21,13 @@ for opt, arg in opts:
 	elif opt in ("-m"):
 		MAX_POINTS = arg
 	elif opt in ("-a"):
-		IS_ANONYMOUS = True
+		IS_ANONYMOUS = False
 
 if 'URL' not in locals():
 	print (help_str)
 	sys.exit(2)
 
-IS_ANONYMOUS = IS_ANONYMOUS if 'IS_ANONYMOUS' in locals() else False
+IS_ANONYMOUS = IS_ANONYMOUS if 'IS_ANONYMOUS' in locals() else True
 MAX_POINTS = float(MAX_POINTS) if 'MAX_POINTS' in locals() else 10
 POINTS = float(POINTS) if 'POINTS' in locals() else 8.6
 ITERATIONS = int(ITERATIONS) if 'ITERATIONS' in locals() else 1
@@ -34,6 +36,26 @@ VALUES_FILE_PATH = 'values.txt'
 
 driver = webdriver.Chrome('chromedriver.exe')
 driver.get(URL)
+
+def _create_line(question_name):
+	values_file = open(VALUES_FILE_PATH, 'a+', encoding='utf-8')
+	values_file.write(question_name + '-+--+-\n')
+
+def _get_first_number_from_str(str):
+	result = ""
+
+	for s in str:
+		if not s.isdigit():
+			str = str[1:]
+		else:
+			break
+
+	for s in str:
+		if s.isdigit() or s == ".":
+			result += s
+		else:
+			break
+	return result
 
 def authorize():
 	driver.implicitly_wait(10)
@@ -46,25 +68,28 @@ def authorize():
 		driver.find_element_by_name('skip').click()
 		submit()
 	else:
-		driver.find_element_by_name('login').send_keys('0117067')
-		driver.find_element_by_name('user_pwd').send_keys('Killer1998')
+		driver.find_element_by_name('login').send_keys('123')
+		driver.find_element_by_name('user_pwd').send_keys('123')
 		submit()
 		
 def get_question_name():
-	elems_h2 = driver.find_elements_by_tag_name('h2')
-	if(len(elems_h2) == 2):
-		return elems_h2[0].text + elems_h2[1].text
-	else:
-		return elems_h2[1].text
+	elems = driver.find_elements_by_xpath('//div[@class=\'b3\']/*[not(self::ol)]')
+	result = ""
+	for e in elems:
+		result += e.get_attribute('innerHTML')
+	return result.replace('\n', '')
 
-def get_question_number():
-	return int(driver.find_element_by_xpath('//font[@color="#0000ff"]').text)
+def get_question_number(): # Питання N:-->2<--  Спроб : 6
+	#Всього одержано балів : 0 з 1. Правильних відповідей: 0 Питання N:2 Спроб : 6
+	text = driver.find_element_by_xpath('//div[@class=\'b2\']').text.split('N:')[1] 
+	#2 Спроб : 6
+	return int(_get_first_number_from_str(text))
 
-def get_points_number():
-	return float(driver.find_elements_by_xpath('//font[@color="#ff0000"]')[0].text)
+def get_points_number(): #Всього одержано балів : -->0<-- з 1
+	return float(_get_first_number_from_str(driver.find_element_by_xpath('//div[@class=\'b2\']').text.split('Всього одержано балів : ')[1]))
 
-def get_points_for_test():
-	return float(driver.find_element_by_xpath('//div[@align="right"]').text.split(':')[1][1])
+def get_points_for_test(): # Балів за це питання : -->1<-- Часу : 60
+	return float(_get_first_number_from_str(driver.find_elements_by_xpath('//div[@class=\'b2\']')[1].text.split('Балів за це питання : ')[1]))
 
 def get_question_correct(question_name):
 	with open(VALUES_FILE_PATH, encoding='utf-8') as values_file:
@@ -88,11 +113,11 @@ def get_next_to_verify(question_name):
 						return value
 				edit_value('ended',question_name,'wrong')
 				return False	
-		create_line(question_name)
+		_create_line(question_name)
 		return VALUES_VERIFY[0]
 
 def get_values(question_name, kind):
-	with open(VALUES_FILE_PATH, encoding='utf-8') as values_file:
+	with open(VALUES_FILE_PATH,'r', encoding='utf-8') as values_file:
 		for line in values_file:
 			line = line.replace('\n','').split('-+-')
 			if(kind == 'correct'):
@@ -102,13 +127,9 @@ def get_values(question_name, kind):
 				if(line[0] == question_name):
 					return line[1].split(',')
 		return False
-		
-def create_line(question_name):
-	values_file = open(VALUES_FILE_PATH, 'a', encoding='utf-8')
-	values_file.write(question_name + '-+--+-\n')
 
 def edit_value(value, question_name, kind, is_partial=False):
-	with open(VALUES_FILE_PATH, 'r', encoding='utf-8') as values_file:
+	with open(VALUES_FILE_PATH, encoding='utf-8') as values_file:
 		lines = values_file.readlines()
 		if(kind == 'correct'):
 			for i, line in enumerate(lines):
@@ -138,12 +159,11 @@ def edit_value(value, question_name, kind, is_partial=False):
 						values_file_w.writelines(lines)
 						return True
 
-	create_line(question_name)
+	_create_line(question_name)
 	edit_value(value, question_name, kind)
 
 def submit():
-	driver.find_element_by_xpath('//input[@type="image"]').click()
-	print('submitted')
+	click_element(driver.find_element_by_xpath('//input[@type="submit"]'))
 
 def refresh_test():
     for cookie in driver.get_cookies():
@@ -166,15 +186,12 @@ def refresh_test():
 def skip_to_end():
 	while True:
 		try:
-			print('try')
 			driver.implicitly_wait(0)
 			driver.find_element_by_name('results')
 			driver.implicitly_wait(10)
 			time.sleep(1)
 			print('finded results page')
 			submit()
-			time.sleep(100)
-			authorize()
 			break
 		except BaseException as e:
 			submit()
@@ -182,3 +199,16 @@ def skip_to_end():
 				driver.switch_to_alert().accept()
 			except:
 				continue	
+
+def click_element(elem):
+	try:
+		elem.click()
+	except:
+		try:
+			time.sleep(2)
+			print("SLEEP click_element 2")
+			elem.click()
+		except:
+			time.sleep(3)
+			print("SLEEP click_element second 3")
+			elem.click()
