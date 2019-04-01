@@ -23,8 +23,12 @@ try:
 except getopt.GetoptError:
     print(help_str)
     sys.exit(2)
+
 for opt, arg in opts:
-    if opt in "-u":
+    if opt in "-h":
+        print(help_str)
+        sys.exit(0)
+    elif opt in "-u":
         URL = arg
     elif opt in "-i":
         ITERATIONS = int(arg)

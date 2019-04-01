@@ -35,15 +35,14 @@ for i in range(1, ITERATIONS + 1):
 
 		# check if this question requires manual text input
 		if text_input_elem:
-			if IS_SKIP_TEXT_INPUTS:
+			text_input_value = get_values(question_name, "correct", True)
+			if text_input_value:
+				text_input_elem.send_keys(text_input_value)
 				submit()
 				driver.switch_to.alert.accept()
 				continue
-			
-			text_input_value = get_values(question_name, "correct", True)
 
-			if text_input_value:
-				text_input_elem.send_keys(text_input_value)
+			if IS_SKIP_TEXT_INPUTS:
 				submit()
 				driver.switch_to.alert.accept()
 				continue
