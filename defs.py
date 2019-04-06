@@ -13,13 +13,8 @@ POINTS = 8.6
 ITERATIONS = 1
 IS_SKIP_TEXT_INPUTS = True
 
-VALUES_VERIFY = ['a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'a7', 'a8', 'a9', 'a10']
-VALUES_FILE_PATH = 'values.txt'
-STR_CORRECT_ANSWER = 'Правильно!'
-STR_WRONG_ANSWER = 'Неправильно!'
-
 try:
-    opts, args = getopt.getopt(sys.argv[1:], "u:p:i:m:a:t")
+    opts, args = getopt.getopt(sys.argv[1:], "u:p:i:m:at")
 except getopt.GetoptError:
     print(help_str)
     sys.exit(2)
@@ -33,7 +28,7 @@ for opt, arg in opts:
     elif opt in "-i":
         ITERATIONS = int(arg)
     elif opt in "-p":
-        POINTS = int(arg)
+        POINTS = float(arg)
     elif opt in "-m":
         MAX_POINTS = int(arg)
     elif opt in "-a":
@@ -45,8 +40,18 @@ if 'URL' is None:
     print(help_str)
     sys.exit(2)
 
+
+VALUES_VERIFY = ['a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'a7', 'a8', 'a9', 'a10']
+STR_CORRECT_ANSWER = 'Правильно'
+STR_WRONG_ANSWER = 'Неправильно'
+VALUES_FILE_PATH = 'values.' + URL.split('=')[-1] + ".txt"
+
+open(VALUES_FILE_PATH, 'a').close()
+
 driver = webdriver.Chrome('chromedriver.exe')
+driver.set_window_position(970, 10)
 driver.implicitly_wait(0.2)
+
 driver.get(URL)
 
 
@@ -107,18 +112,6 @@ def get_points_for_test():  # Балів за це питання : -->1<-- Ча
         driver.find_elements_by_xpath('//div[@class=\'b2\']')[1].text.split('Балів за це питання : ')[1]))
 
 
-def get_question_correct(question_name):
-    with open(VALUES_FILE_PATH, encoding='utf-8') as values_file:
-        for line in values_file:
-            line = line.split('-+-')
-            if line[0] == question_name:
-                return line[2]
-
-
-def last_question_parse_possibly_values():
-    return driver.find_elements_by_xpath('//tr/td/h3/strong')[6:]
-
-
 def get_next_to_verify(question_name):
     with open(VALUES_FILE_PATH, encoding='utf-8') as values_file:
         for line in values_file:
@@ -129,7 +122,7 @@ def get_next_to_verify(question_name):
                 for value in VALUES_VERIFY:
                     if value not in line[1] and value not in line[2]:
                         return value
-                edit_value('ended', question_name, 'wrong')
+                add_value('ended', question_name, 'wrong')
                 return False
         _create_line(question_name)
         return VALUES_VERIFY[0]
@@ -149,7 +142,7 @@ def get_values(question_name, kind, get_only_first_value=False):
         return False
 
 
-def edit_value(value, question_name, kind, is_partial=False):
+def add_value(value, question_name, kind, is_partial=False):
     with open(VALUES_FILE_PATH, encoding='utf-8') as values_file:
         lines = values_file.readlines()
         if kind == 'correct':
@@ -179,10 +172,11 @@ def edit_value(value, question_name, kind, is_partial=False):
                         lines[i] = '-+-'.join(line)
                         values_file_w.writelines(lines)
                         return True
-
     _create_line(question_name)
-    edit_value(value, question_name, kind)
+    add_value(value, question_name, kind)
 
+# def delete_value()
+#
 
 def submit():
     click_element(driver.find_element_by_xpath('//input[@type="submit"]'))
@@ -203,16 +197,14 @@ def refresh_test():
         # elif(cookie['name'] == 'check'):
         # 	driver.delete_cookie('check')
         # 	driver.add_cookie({'name':'check','value':'1','path':'/web_thesaurus'})
-    for cookie in driver.get_cookies():
-        print(cookie['name'] + '=>' + cookie['value'])
 
 
 def skip_to_end():
     while True:
         try:
-            driver.implicitly_wait(0.2)
+            driver.implicitly_wait(0.1)
             driver.find_element_by_name('results')
-            print('finded results page')
+            print('found results page')
             submit()
             break
         except:
